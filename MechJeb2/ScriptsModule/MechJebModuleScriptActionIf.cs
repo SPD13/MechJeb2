@@ -117,6 +117,37 @@ namespace MuMech
 			return this.actionsThen.getRecursiveCount() + this.actionsElse.getRecursiveCount();
 		}
 
+		public int getRecursiveLastIndex()
+		{
+			return this.actionsThen.getRecursiveLastIndex() + this.actionsElse.getRecursiveLastIndex();
+		}
+
+		public bool getRecursiveWaitingInput()
+		{
+			if (this.actionsThen.getRecursiveWaitingInput())
+			{
+				return true;
+			}
+			else if (this.actionsElse.getRecursiveWaitingInput())
+			{
+				return true;
+			}
+			return false;
+		}
+
+		public bool recursiveAcknoledgePause()
+		{
+			if (this.actionsThen.recursiveAcknoledgePause())
+			{
+				return true;
+			}
+			else if (this.actionsElse.recursiveAcknoledgePause())
+			{
+				return true;
+			}
+			return false;
+		}
+
 		public List<MechJebModuleScriptAction> getRecursiveActionsList()
 		{
 			List<MechJebModuleScriptAction> actionsRes = new List<MechJebModuleScriptAction>();

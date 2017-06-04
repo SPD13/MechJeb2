@@ -73,6 +73,21 @@ namespace MuMech
 			return this.actions.getRecursiveCount();
 		}
 
+		public int getRecursiveLastIndex()
+		{
+			return this.actions.getRecursiveLastIndex();
+		}
+
+		public bool getRecursiveWaitingInput()
+		{
+			return this.actions.getRecursiveWaitingInput();
+		}
+
+		public bool recursiveAcknoledgePause()
+		{
+			return this.actions.recursiveAcknoledgePause();
+		}
+
 		public List<MechJebModuleScriptAction> getRecursiveActionsList()
 		{
 			return this.actions.getRecursiveActionsList();

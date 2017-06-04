@@ -92,6 +92,21 @@ namespace MuMech
 			return this.actions.getRecursiveActionsList();
 		}
 
+		public int getRecursiveLastIndex()
+		{
+			return this.actions.getRecursiveLastIndex();
+		}
+
+		public bool getRecursiveWaitingInput()
+		{
+			return this.actions.getRecursiveWaitingInput();
+		}
+
+		public bool recursiveAcknoledgePause()
+		{
+			return this.actions.recursiveAcknoledgePause();
+		}
+
 		public void notifyEndActionsList()
 		{
 			executedTimes++;

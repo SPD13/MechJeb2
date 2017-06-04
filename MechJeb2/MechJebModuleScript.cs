@@ -43,6 +43,7 @@ namespace MuMech
 		private int flashMessageType = 0; //0=yellow, 1=red (error)
 		private float flashMessageStartTime = 0f;
 		private bool waitingDeletionConfirmation = false;
+		private bool waitingRevertConfirmation = false;
 		private List<String> compatiblePluginsInstalled = new List<String>();
 		private bool addActionDisabled = false;
 		private int old_selectedMemorySlotType;
@@ -235,6 +236,26 @@ namespace MuMech
 					{
 						this.stop();
 					}
+					if (GUILayout.Button("↩ Revert Flight"))
+					{
+						if (!this.waitingRevertConfirmation)
+						{
+							this.waitingRevertConfirmation = true;
+							this.setFlashMessage("Warning: To confirm you want to revert the current flight, press again the revert button", 0);
+						}
+						else
+						{
+							var game = GamePersistence.LoadGame("persistent", HighLogic.SaveFolder, true, false);
+							if (game == null || game.flightState == null || !game.compatible)
+							{
+								Debug.LogError("Failed to load save 'peristent'");
+							}
+							else
+							{
+								FlightDriver.StartAndFocusVessel(game, game.flightState.activeVesselIdx);
+							}
+						}
+					}
 				}
 				if (this.actionsList.getActionsCount() > 0)
 				{
@@ -336,21 +357,21 @@ namespace MuMech
 						this.LoadConfig(this.selectedSlot, true, false);
 					}
 					GUILayout.EndHorizontal();
-					if (this.flashMessage.Length > 0)
+				}
+				if (this.flashMessage.Length > 0)
+				{
+					GUILayout.BeginHorizontal();
+					GUIStyle sflash = new GUIStyle(GUI.skin.label);
+					if (this.flashMessageType == 1)
 					{
-						GUILayout.BeginHorizontal();
-						GUIStyle sflash = new GUIStyle(GUI.skin.label);
-						if (this.flashMessageType == 1)
-						{
-							sflash.normal.textColor = Color.red;
-						}
-						else
-						{
-							sflash.normal.textColor = Color.yellow;
-						}
-						GUILayout.Label(this.flashMessage, sflash);
-						GUILayout.EndHorizontal();
+						sflash.normal.textColor = Color.red;
 					}
+					else
+					{
+						sflash.normal.textColor = Color.yellow;
+					}
+					GUILayout.Label(this.flashMessage, sflash);
+					GUILayout.EndHorizontal();
 				}
 				actionsList.actionsWindowGui(windowID); //Render Actions list
 			}
@@ -452,6 +473,7 @@ namespace MuMech
 					this.flashMessage = "";
 					this.flashMessageStartTime = 0f;
 					this.waitingDeletionConfirmation = false;
+					this.waitingRevertConfirmation = false;
 				}
 			}
 		}
@@ -623,6 +645,27 @@ namespace MuMech
 		public void setSelectedMemorySlotType(int selectedMemorySlotType)
 		{
 			this.selectedMemorySlotType = selectedMemorySlotType;
+		}
+
+		//If the script is waiting on a pause, this function will aknoledge the pause and move to the next step
+		public void acknoledgePause()
+		{
+			this.actionsList.recursiveAcknoledgePause();
+		}
+
+		//Provide a JSON string with info (for Telemachus)
+		public String getInfos()
+		{
+			String status_string = "stopped";
+			if (this.started)
+			{
+				status_string = "started";
+			}
+			if (this.actionsList.getRecursiveWaitingInput())
+			{
+				status_string = "waiting";
+			}
+			return "{\"status\":\"" + status_string + "\", \"memorySlotType\":"+ this.selectedMemorySlotType + ", \"memorySlot\":"+this.selectedSlot+", \"actionsCount\":\""+this.actionsList.getRecursiveCount()+"\", \"lastActionIndex\":\""+this.actionsList.getRecursiveLastIndex()+"\"}";
 		}
 	}
 }

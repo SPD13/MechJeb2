@@ -680,6 +680,74 @@ namespace MuMech
 			return list;
 		}
 
+		//Return the index of the last action executed
+		public int getRecursiveLastIndex()
+		{
+			int index = 0;
+			for (int i = 0; i < actionsList.Count; i++)
+			{
+				if (actionsList[i] is IMechJebModuleScriptActionContainer)
+				{
+					index += ((IMechJebModuleScriptActionContainer)actionsList[i]).getRecursiveLastIndex();
+				}
+				else if (actionsList[i] is MechJebModuleScriptAction)
+				{
+					if (((MechJebModuleScriptAction)actionsList[i]).isExecuted())
+					{
+						index++;
+					}
+				}
+			}
+			return index;
+		}
+
+		//Return true if waiting for user input
+		public bool getRecursiveWaitingInput()
+		{
+			for (int i = 0; i < actionsList.Count; i++)
+			{
+				if (actionsList[i] is IMechJebModuleScriptActionContainer)
+				{
+					if (((IMechJebModuleScriptActionContainer)actionsList[i]).getRecursiveWaitingInput())
+					{
+						return true;
+					}
+				}
+				else if (actionsList[i] is MechJebModuleScriptActionPause)
+				{
+					if (((MechJebModuleScriptActionPause)actionsList[i]).isStarted() && !((MechJebModuleScriptActionPause)actionsList[i]).isExecuted())
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		//If the script is waiting on a pause, validate the pause and move to the next action
+		public bool recursiveAcknoledgePause()
+		{
+			for (int i = 0; i < actionsList.Count; i++)
+			{
+				if (actionsList[i] is IMechJebModuleScriptActionContainer)
+				{
+					if (((IMechJebModuleScriptActionContainer)actionsList[i]).recursiveAcknoledgePause())
+					{
+						return true;
+					}
+				}
+				else if (actionsList[i] is MechJebModuleScriptActionPause)
+				{
+					if (((MechJebModuleScriptActionPause)actionsList[i]).isStarted() && !((MechJebModuleScriptActionPause)actionsList[i]).isExecuted())
+					{
+						((MechJebModuleScriptActionPause)actionsList[i]).endAction();
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
 		public void recursiveResetStatus()
 		{
 			List<MechJebModuleScriptAction> actions = this.getRecursiveActionsList();
