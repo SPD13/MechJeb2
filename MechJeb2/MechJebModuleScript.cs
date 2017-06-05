@@ -236,24 +236,24 @@ namespace MuMech
 					{
 						this.stop();
 					}
-					if (GUILayout.Button("↩ Revert Flight"))
+				}
+				if (GUILayout.Button("↩ Revert Flight"))
+				{
+					if (!this.waitingRevertConfirmation)
 					{
-						if (!this.waitingRevertConfirmation)
+						this.waitingRevertConfirmation = true;
+						this.setFlashMessage("Warning: To confirm you want to revert the current flight, press again the revert button", 0);
+					}
+					else
+					{
+						var game = GamePersistence.LoadGame("persistent", HighLogic.SaveFolder, true, false);
+						if (game == null || game.flightState == null || !game.compatible)
 						{
-							this.waitingRevertConfirmation = true;
-							this.setFlashMessage("Warning: To confirm you want to revert the current flight, press again the revert button", 0);
+							Debug.LogError("Failed to load save 'peristent'");
 						}
 						else
 						{
-							var game = GamePersistence.LoadGame("persistent", HighLogic.SaveFolder, true, false);
-							if (game == null || game.flightState == null || !game.compatible)
-							{
-								Debug.LogError("Failed to load save 'peristent'");
-							}
-							else
-							{
-								FlightDriver.StartAndFocusVessel(game, game.flightState.activeVesselIdx);
-							}
+							FlightDriver.StartAndFocusVessel(game, game.flightState.activeVesselIdx);
 						}
 					}
 				}

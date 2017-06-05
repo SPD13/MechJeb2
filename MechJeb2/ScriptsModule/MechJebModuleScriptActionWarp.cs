@@ -9,7 +9,7 @@ namespace MuMech
 		public static String NAME = "Warp";
 
 		public enum WarpTarget { Periapsis, Apoapsis, Node, SoI, Time, PhaseAngleT, SuicideBurn, AtmosphericEntry }
-		static string[] warpTargetStrings = new string[] { "periapsis", "apoapsis", "maneuver node", "SoI transition", "Time", "Phase angle", "suicide burn", "atmospheric entry" };
+		private string[] warpTargetStrings = new string[] { "periapsis", "apoapsis", "maneuver node", "SoI transition", "Time", "Phase angle", "suicide burn", "atmospheric entry" };
 		[Persistent(pass = (int)Pass.Type)]
 		public WarpTarget warpTarget = WarpTarget.Periapsis;
 		[Persistent(pass = (int)Pass.Type)]
