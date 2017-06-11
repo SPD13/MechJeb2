@@ -58,7 +58,8 @@ namespace MuMech
 			actionsNamesList.Add("Timer");
 			actionsNamesList.Add("Pause");
 			actionsNamesList.Add("Wait for");
-			actionsNamesList.Add("Warp");
+			actionsNamesList.Add("Warp to");
+			actionsNamesList.Add("Warp rate");
 			actionNames[0] = actionsNamesList.ToArray();
 
 			//Docking
@@ -294,9 +295,13 @@ namespace MuMech
 					{
 						this.addAction(new MechJebModuleScriptActionTolerance(scriptModule, core, this));
 					}
-					else if (actionName.CompareTo("Warp") == 0)
+					else if (actionName.CompareTo("Warp to") == 0)
 					{
 						this.addAction(new MechJebModuleScriptActionWarp(scriptModule, core, this));
+					}
+					else if (actionName.CompareTo("Warp rate") == 0)
+					{
+						this.addAction(new MechJebModuleScriptActionWarpRate(scriptModule, core, this));
 					}
 					else if (actionName.CompareTo("Wait for") == 0)
 					{
@@ -569,6 +574,10 @@ namespace MuMech
 				else if (scriptNode.name.CompareTo(MechJebModuleScriptActionWarp.NAME) == 0)
 				{
 					obj = new MechJebModuleScriptActionWarp(scriptModule, core, this);
+				}
+				else if (scriptNode.name.CompareTo(MechJebModuleScriptActionWarpRate.NAME) == 0)
+				{
+					obj = new MechJebModuleScriptActionWarpRate(scriptModule, core, this);
 				}
 				else if (scriptNode.name.CompareTo(MechJebModuleScriptActionTolerance.NAME) == 0)
 				{

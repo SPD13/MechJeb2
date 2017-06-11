@@ -8,8 +8,8 @@ namespace MuMech
 	{
 		public static String NAME = "Warp";
 
-		public enum WarpTarget { Periapsis, Apoapsis, Node, SoI, Time, PhaseAngleT, SuicideBurn, AtmosphericEntry }
-		private string[] warpTargetStrings = new string[] { "periapsis", "apoapsis", "maneuver node", "SoI transition", "Time", "Phase angle", "suicide burn", "atmospheric entry" };
+		public enum WarpTarget {Periapsis, Apoapsis, Node, SoI, Time, PhaseAngleT, SuicideBurn, AtmosphericEntry }
+		private string[] warpTargetStrings = new string[] {"periapsis", "apoapsis", "maneuver node", "SoI transition", "Time", "Phase angle", "suicide burn", "atmospheric entry" };
 		[Persistent(pass = (int)Pass.Type)]
 		public WarpTarget warpTarget = WarpTarget.Periapsis;
 		[Persistent(pass = (int)Pass.Type)]
@@ -18,6 +18,7 @@ namespace MuMech
 		public EditableTime leadTime = 0;
 		[Persistent(pass = (int)Pass.Type)]
 		EditableTime timeOffset = 0;
+
 		double targetUT = 0;
 		private bool warping;
 		private int spendTime = 0;
