@@ -237,7 +237,7 @@ namespace MuMech
 						this.stop();
 					}
 				}
-				if (GUILayout.Button("↩ Revert Flight"))
+				if (this.actionsList.getActionsCount() > 0 && GUILayout.Button("↩ Revert Flight"))
 				{
 					if (!this.waitingRevertConfirmation)
 					{

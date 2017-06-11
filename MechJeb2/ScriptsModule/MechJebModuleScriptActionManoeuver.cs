@@ -22,7 +22,7 @@ namespace MuMech
 			//Only add the "tested" and "supported" operations
 			for (int i = 0; i < op_list.Length; i++)
 			{
-				if (!op_list[i].getName().ToLower().Contains("advanced transfer") && !op_list[i].getName().ToLower().Contains("transfer to another planet"))
+				if (!op_list[i].getName().ToLower().Contains("advanced transfer"))
 				{
 					operation.Add(op_list[i]);
 					operationNames.Add(op_list[i].getName());

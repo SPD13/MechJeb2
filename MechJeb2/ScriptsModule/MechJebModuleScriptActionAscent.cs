@@ -36,9 +36,19 @@ namespace MuMech
 		[Persistent(pass = (int)Pass.Type)]
 		public bool launchingToRendezvous = false;
 		[Persistent(pass = (int)Pass.Type)]
+		public bool launchingToPlane = false;
+		[Persistent(pass = (int)Pass.Type)]
+		public bool launchingToInterplanetary = false;
+		[Persistent(pass = (int)Pass.Type)]
 		public CelestialBody mainBody;
 		[Persistent(pass = (int)Pass.Type)]
 		public Orbit targetOrbit;
+		[Persistent(pass = (int)Pass.Type)]
+		public EditableDouble launchPhaseAngle = 0;
+		[Persistent(pass = (int)Pass.Type)]
+		public EditableDouble launchLANDifference = 0;
+		public double interplanetaryWindowUT;
+		private string error_message = "";
 
 		public MechJebModuleScriptActionAscent (MechJebModuleScript scriptModule, MechJebCore core, MechJebModuleScriptActionsList actionsList) : base(scriptModule, core, actionsList, NAME)
 		{
@@ -48,6 +58,8 @@ namespace MuMech
 			this.targetOrbit = core.target.TargetOrbit;
 			actionTypes.Add("Ascent Guidance");
 			actionTypes.Add("Launching to Rendezvous");
+			actionTypes.Add("Launching to plane");
+			actionTypes.Add("Launching at interplanetary window");
 			this.readModuleConfiguration();
 		}
 
@@ -87,18 +99,62 @@ namespace MuMech
 			if (actionType == 1)
 			{
 				this.launchingToRendezvous = true;
+				this.launchingToPlane = false;
+				this.launchingToInterplanetary = false;
+			}
+			else if (actionType == 2)
+			{
+				this.launchingToRendezvous = false;
+				this.launchingToPlane = true;
+				this.launchingToInterplanetary = false;
+			}
+			else if (actionType == 2)
+			{
+				this.launchingToRendezvous = false;
+				this.launchingToPlane = false;
+				this.launchingToInterplanetary = true;
 			}
 			else {
 				this.launchingToRendezvous = false;
+				this.launchingToPlane = false;
+				this.launchingToInterplanetary = false;
 			}
-			if (!this.launchingToRendezvous) {
+			if (!this.launchingToRendezvous && !this.launchingToPlane && !this.launchingToInterplanetary) {
 				GUILayout.Label ("ASCENT to " + (this.desiredOrbitAltitude / 1000.0) + "km");
-			} else {
+			} else if (this.launchingToRendezvous) {
 				GUILayout.Label ("Launching to rendezvous");
+				this.launchPhaseAngle.text = GUILayout.TextField(this.launchPhaseAngle.text,
+								GUILayout.Width(60));
+				GUILayout.Label("º", GUILayout.ExpandWidth(false));
+			} else if (this.launchingToPlane)
+			{
+				GUILayout.Label("Launching to plane");
+				this.launchLANDifference.text = GUILayout.TextField(
+								this.launchLANDifference.text, GUILayout.Width(60));
+				GUILayout.Label("º", GUILayout.ExpandWidth(false));
+			} else if (this.launchingToInterplanetary)
+			{
+				GUILayout.Label("Launching to Interplanetary window");
 			}
 
 			if (this.autopilot != null)
 			{
+				if (this.started)
+				{
+					//Autopilot Countdown
+					if (this.autopilot.tMinus > 3 * this.scriptModule.vesselState.deltaT)
+					{
+						GUILayout.Label(": T-" + GuiUtils.TimeToDHMS(autopilot.tMinus, 1));
+					}
+
+					if (GUILayout.Button("Abort"))
+					{
+						launchingToInterplanetary =
+							launchingToPlane = launchingToRendezvous = autopilot.timedLaunch = false;
+						this.endAction();
+					}
+				}
+				
 				if (this.isExecuted() && this.autopilot.status.CompareTo ("Off") == 0)
 				{
 					GUILayout.Label ("Finished Ascend");
@@ -113,6 +169,12 @@ namespace MuMech
 				GUIStyle s = new GUIStyle(GUI.skin.label);
 				s.normal.textColor = Color.yellow;
 				GUILayout.Label ("-- ERROR --", s);
+			}
+			if (error_message.Length > 0)
+			{
+				GUIStyle s = new GUIStyle(GUI.skin.label);
+				s.normal.textColor = Color.red;
+				GUILayout.Label(error_message, s);
 			}
 			base.postWindowGUI(windowID);
 		}
@@ -134,9 +196,37 @@ namespace MuMech
 			this.writeModuleConfiguration();
 			if (this.launchingToRendezvous)
 			{
+				this.autopilot.launchPhaseAngle = this.launchPhaseAngle;
 				this.autopilot.StartCountdown(this.scriptModule.vesselState.time +
 					LaunchTiming.TimeToPhaseAngle(this.autopilot.launchPhaseAngle,
 						mainBody, this.scriptModule.vesselState.longitude, targetOrbit));
+			}
+			if (this.launchingToPlane)
+			{
+				this.autopilot.launchLANDifference = this.launchLANDifference;
+				autopilot.StartCountdown(this.scriptModule.vesselState.time +
+														 LaunchTiming.TimeToPlane(autopilot.launchLANDifference,
+															 mainBody, this.scriptModule.vesselState.latitude, this.scriptModule.vesselState.longitude,
+															 core.target.TargetOrbit));
+			}
+			if (core.target.TargetOrbit.referenceBody == this.scriptModule.orbit.referenceBody.referenceBody)
+			{
+				//compute the desired launch date
+				OrbitalManeuverCalculator.DeltaVAndTimeForHohmannTransfer(mainBody.orbit,
+					core.target.TargetOrbit, this.scriptModule.vesselState.time, out interplanetaryWindowUT);
+				double desiredOrbitPeriod = 2 * Math.PI *
+											Math.Sqrt(
+												Math.Pow(mainBody.Radius + autopilot.desiredOrbitAltitude, 3)
+													/ mainBody.gravParameter);
+				//launch just before the window, but don't try to launch in the past                                
+				interplanetaryWindowUT -= 3 * desiredOrbitPeriod;
+				interplanetaryWindowUT = Math.Max(this.scriptModule.vesselState.time + autopilot.warpCountDown,
+					interplanetaryWindowUT);
+				autopilot.StartCountdown(interplanetaryWindowUT);
+			}
+			else
+			{
+				error_message = "Impossible to execute Interplanetary launch";
 			}
 			this.autopilot.users.Add (this.ascentModule);
 		}
