@@ -110,7 +110,8 @@ namespace MuMech
 
 			//Modules
 			actionsNamesList = new List<String>();
-			actionsNamesList.Add("MODULE Ascent Autopilot");
+
+            actionsNamesList.Add("MODULE Ascent Autopilot");
 			actionsNamesList.Add("MODULE Docking Autopilot");
 			actionsNamesList.Add("MODULE Landing");
 			actionsNamesList.Add("MODULE Rendezvous");

@@ -17,8 +17,18 @@ namespace MuMech
         private static FieldInfo RFignitionsField;
         // RealFuels.ModuleEngineRF ullage field to call via reflection
         private static FieldInfo RFullageField;
-        // stableUllage is always true without RealFuels installed
-        public bool stableUllage { get { return this.einfo.stableUllage; } }
+
+        public enum UllageState {
+            VeryUnstable,
+            Unstable,
+            VeryRisky,
+            Risky,
+            Stable,
+            VeryStable  // "Nominal" also winds up here
+        }
+
+        // lowestUllage is always VeryStable without RealFuels installed
+        public UllageState lowestUllage { get { return this.einfo.lowestUllage; } }
 
         private Vessel vesselRef = null;
 
@@ -139,8 +149,11 @@ namespace MuMech
         public double maxEngineResponseTime = 0;
 
         public bool rcsThrust = false;
+        /* the current throttle limit, this may include transient condition such as limiting to zero due to unstable propellants in RF */
         public float throttleLimit = 1;
-        public double limitedMaxThrustAccel { get { return maxThrustAccel * throttleLimit + minThrustAccel * (1 - throttleLimit); } }
+        /* the fixed throttle limit (i.e. user limited in the GUI), does not include transient conditions as limiting to zero due to unstable propellants in RF */
+        public float throttleFixedLimit = 1;
+        public double limitedMaxThrustAccel { get { return maxThrustAccel * throttleFixedLimit + minThrustAccel * (1 - throttleFixedLimit); } }
 
         public Vector3d CoT;
         public Vector3d DoT;
@@ -307,7 +320,7 @@ namespace MuMech
                     return null;
                 }
 
-                Type type = Type.GetType("RealFuels.ModuleEnginesRF, " + assemblyName);
+                Type type = Type.GetType(className + ", " + assemblyName);
 
                 if (type == null)
                 {
@@ -356,6 +369,7 @@ namespace MuMech
             ToggleRCSThrust(vessel);
 
             UpdateMoIAndAngularMom(vessel);
+
             return true;
         }
 
@@ -545,8 +559,7 @@ namespace MuMech
             orbitPeA.value = vessel.orbit.PeA;
             orbitPeriod.value = vessel.orbit.period;
             orbitTimeToAp.value = vessel.orbit.timeToAp;
-            if (vessel.orbit.eccentricity < 1) orbitTimeToPe.value = vessel.orbit.timeToPe;
-            else orbitTimeToPe.value = -vessel.orbit.meanAnomaly / (2 * Math.PI / vessel.orbit.period);
+            orbitTimeToPe.value = vessel.orbit.timeToPe;
 
             if (!vessel.LandedOrSplashed)
             {
@@ -1161,8 +1174,8 @@ namespace MuMech
             public Vector3d thrustMin = new Vector3d(); // thrust at zero throttle
             public double maxResponseTime = 0;
             public Vector6 torqueDiffThrottle = new Vector6();
-            // stableUllage is always true without RealFuels installed
-            public bool stableUllage = true;
+            // lowestUllage is always VeryStable without RealFuels installed
+            public UllageState lowestUllage = UllageState.VeryStable;
 
             public struct FuelRequirement
             {
@@ -1187,7 +1200,7 @@ namespace MuMech
 
                 resourceRequired.Clear();
 
-                stableUllage = true;
+                lowestUllage = UllageState.VeryStable;
 
                 CoM = c;
 
@@ -1274,9 +1287,28 @@ namespace MuMech
                     return;
                 }
 
-                if ((propellantStatus != "Nominal") && (propellantStatus != "Very Stable") && (propellantStatus != "Stable"))
+                UllageState propellantState;
+
+                if (propellantStatus == "Nominal" || propellantStatus == "Very Stable" )
+                    propellantState = UllageState.VeryStable;
+                else if (propellantStatus == "Stable")
+                    propellantState = UllageState.Stable;
+                else if (propellantStatus == "Risky")
+                    propellantState = UllageState.Risky;
+                else if (propellantStatus == "Very Risky")
+                    propellantState = UllageState.VeryRisky;
+                else if (propellantStatus == "Unstable")
+                    propellantState = UllageState.Unstable;
+                else if (propellantStatus == "Very Unstable")
+                    propellantState = UllageState.VeryUnstable;
+                else {
+                    propellantState = UllageState.VeryStable;
+                    Debug.Log("BUG: Unknown propellantStatus from RealFuels: " + propellantStatus);
+                }
+
+                if (propellantState < lowestUllage)
                 {
-                    stableUllage = false;
+                    lowestUllage = propellantState;
                 }
             }
 
@@ -1311,8 +1343,10 @@ namespace MuMech
                     double minThrust = e.minFuelFlow * e.flowMultiplier * Isp * e.g;
 
                     // RealFuels engines reports as operational even when they are shutdown
-                    if (e.finalThrust == 0f && minThrust > 0f)
-                        minThrust = maxThrust = 0;
+                    // REMOVED: this definitively screws up the 1kN thruster in RO/RF and sets minThrust/maxThrust
+                    // to zero when the engine is just throttled down -- which screws up suicide burn calcs, etc.
+                    // if (e.finalThrust == 0f && minThrust > 0f)
+                    //    minThrust = maxThrust = 0;
 
                     //MechJebCore.print(maxThrust.ToString("F2") + " " + minThrust.ToString("F2") + " " + e.minFuelFlow.ToString("F2") + " " + e.maxFuelFlow.ToString("F2") + " " + e.flowMultiplier.ToString("F2") + " " + Isp.ToString("F2") + " " + thrustLimiter.ToString("F3"));
 

@@ -9,6 +9,7 @@ namespace MuMech
 		int getRecursiveLastIndex();
 		bool getRecursiveWaitingInput();
 		bool recursiveAcknoledgePause();
+
 		List<MechJebModuleScriptAction> getRecursiveActionsList();
 		List<MechJebModuleScriptActionsList> getActionsListsObjects();
 	}
