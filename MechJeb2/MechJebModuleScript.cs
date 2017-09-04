@@ -96,7 +96,7 @@ namespace MuMech
 
 		public override void OnStart(PartModule.StartState state)
 		{
-			//Connection with IRRobotics sequencer
+			//Connection with modules
 			foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
 			{
 				if (assembly.FullName.Contains("InfernalRobotics"))
@@ -107,6 +107,11 @@ namespace MuMech
 				{
 					this.compatiblePluginsInstalled.Add("kOS");
 				}
+			}
+			//Kerbal alarm clock has a wrapper we can use
+			if (KACWrapper.InitKACWrapper())
+			{
+				this.compatiblePluginsInstalled.Add("KerbalAlarmClock");
 			}
 			//Populate Actions names. Need to run this after the compatibility check with other plugins
 			this.actionsList.refreshActionNamesPlugins();
